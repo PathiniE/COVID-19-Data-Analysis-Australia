@@ -1,0 +1,325 @@
+---
+title: "Programming and Data  Analysis with R"
+author: "AS2021394 - Pathini Ekanayaka"
+
+output: html_document  
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **1. Introduction**
+* Australia, is a country comprising the mainland of the Australian continent, the island of Tasmania, and numerous smaller islands. Australia is the largest country by area in Oceania and the world's sixth-largest country. Australia is the oldest, flattest, and driest inhabited continent, with the least fertile soils. The population of 26 million is highly urbanized and heavily concentrated on the eastern seaboard. Australia’s capital is Canberra, and its largest city is Sydney. The country’s other major metropolitan areas are Melbourne, Brisbane, Perth, and Adelaide. It is a megadiverse country, and its size gives it a wide variety of landscapes and climates, with deserts in the centre, tropical rainforests in the north-east, tropical savannas in the north, and mountain ranges in the south-east.
+
+###### *From: https://en.wikipedia.org/wiki/Australia*
+
+
+
+
+```{r map-of-australia, echo=FALSE}
+# Load the required libraries
+library(ggplot2)
+library(maps)
+
+# Get the map data for Australia
+australia_map <- map_data("world", region = "Australia")
+
+# Plot the map
+ggplot(data = australia_map) +
+  geom_polygon(aes(x = long, y = lat, group = group), fill = "lightblue", color = "black") +
+  coord_fixed(1.3) +
+  theme_minimal() +
+  labs(title = "Map of Australia")
+
+
+```
+
+
+### 1.1 COVID-19 pandemic in Australia
+The COVID-19 pandemic in Australia was a part of the worldwide pandemic of the coronavirus disease 2019 (COVID-19) caused by severe acute respiratory syndrome coronavirus 2. The first confirmed case in Australia was identified on 25 January 2020, in Victoria, when a man who had returned from Wuhan, Hubei Province, China, tested positive for the virus. As of 6 August 2022, Australia has reported over 11,350,000 cases and 19,265 deaths, with Victoria's 2020 second wave having the highest fatality rate per case.
+
+In March 2020, the Australian government established the intergovernmental National Cabinet and declared a human biosecurity emergency in response to the outbreak. Australian borders were closed to all non-residents on 20 March, and returning residents were required to spend two weeks in supervised quarantine hotels from 27 March. Many individual states and territories also closed their borders to varying degrees, with some remaining closed until late 2020, and continuing to periodically close during localised outbreaks. Social rules were introduced on 21 March, and state governments started to close non-essential services. Non-essential services included social gathering venues such as pubs and clubs but unlike many other countries did not include most business operations such as construction, manufacturing and many retail categories. The number of new cases initially grew sharply, then levelled out at about 350 per day around 22 March, and started falling at the beginning of April to under 20 cases per day by the end of the month. 
+
+Australia was one of few countries to pursue a zero-COVID "suppression" strategy until late 2021, meaning it aimed to minimise domestic community transmission. Implementation involved strict controls on international arrivals and aggressively responding to local outbreaks with lockdowns and exhaustive contact tracing of domestic COVID-19 clusters. A second wave of infections emerged in Victoria during May and June 2020, which was attributed to an outbreak at a Melbourne quarantine hotel. The second wave, though largely localised to Melbourne, was much more widespread and deadlier than the first; at its peak, the state had over 7,000 active cases. Victoria underwent a second strict lockdown which eventually lasted almost four months. The wave ended with zero new cases being recorded on 26 October 2020. No deaths from COVID-19 were recorded in Australia from 28 December 2020 until 13 April 2021, when one death occurred in Queensland. 
+
+###### *From:https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Australia*
+
+
+
+```{r,comment=NA,echo=FALSE,results='hide'}
+library(coronavirus)
+data("coronavirus")
+head(coronavirus)
+```
+
+```{r,comment=NA,echo=FALSE,results='hide',message=FALSE}
+library(tidyverse)
+australia_data<-filter(coronavirus,country=="Australia")
+australia_data<- australia_data %>%
+filter(cases >= 0)
+head(australia_data)
+
+```
+
+## **2. Exploratory Data Analysis**
+
+### 2.1 Structure of the data set
+
+The dataset contains the daily summary of Coronavirus cases worldwide. All cases are recorded according to the following variables;
+
+  * Date
+  * Country
+  * Province/state;
+  * Latitudinal & Longtitudinal location of the country
+  * Type of reported case – confirmed, death, recovered
+  * Number of cases on the given date
+  * Population
+  * Continet to which the country belongs
+  
+All data entries span from January 22, 2020, to March 9, 2023.
+  
+```{r,comment=NA,echo=FALSE,results='hide',message=FALSE}
+library(tidyverse)
+australia_data_new<-select(australia_data,date,type,cases)
+australia_data_new<- australia_data_new %>%
+filter(cases >=0)
+head(australia_data_new)
+
+```
+
+```{r,comment=NA,echo=FALSE,results='hide'}
+australia_data_new <- australia_data_new %>%
+mutate(month = format(as.Date(date), "%B")) %>%
+mutate(month = factor(month, levels = month.name))  
+
+```
+
+```{r,comment=NA,echo=FALSE,results='hide'}
+australia_data_new <- australia_data_new %>%
+mutate(year = format(as.Date(date), "%Y"))
+head(australia_data_new)
+
+```
+
+```{r,comment=NA,echo=FALSE,results='hide'}
+summary <- australia_data_new %>%
+group_by(type) %>%
+summarize(total_cases = sum(cases, na.rm = TRUE))
+head(summary)
+
+```
+
+
+
+### 2.2 Descriptive Analysis
+##### **2.2.1 Total Cases Vs Case Type**
+
+The following table and the bar graph show the number of cases recorded in Austalia from January 22, 2020, to March 9, 2023 according to the type of the case.(confirmed,death and recovered)
+
+
+```{r,comment=NA,echo=FALSE}
+library(knitr)
+kable(summary)
+
+```
+
+
+
+```{r,comment=NA,echo=FALSE,,message=FALSE}
+library(tidyverse)
+library(scales)
+
+ggplot(summary, aes(x = type, y = total_cases, fill = type)) +
+geom_bar(stat = "identity") +
+geom_text(aes(label = scales::comma(total_cases)), vjust = -0.5) +
+scale_y_continuous(labels = scales::label_comma(scale = 1e-3, suffix = "k")) +
+labs( x = "Type", y = "Total Number of Cases",title = "Figure 01:COVID-19 Cases") 
+ 
+```
+
+
+##### **2.2.2 Total number of cases over time**
+
+The following graph displays the total number of COVID-19 cases over time in Austalia, categorized by case type: confirmed,death and recovery.
+
+* There is a significant increase in confirmed cases, particularly in 2021 and early 2022, with the highest peak occurring around the beginning of 2022.
+
+* There is a noticeable increase in death cases from 2022 and in early 2023.
+
+* The data for recoveries shows an initial peak in 2020 and the highest number of people have recoverd in late 2020.
+
+In summary, the data indicates that Australia experienced major waves of COVID-19, with the most substantial peaks in confirmed cases occurring in 2022. The death and recovery trends followed the pattern of confirmed cases, showing the impact of these waves.
+
+
+
+```{r,comment=NA,echo=FALSE,,message=FALSE}
+library(tidyverse)
+ggplot(australia_data_new, aes(x = date, y = cases, color = type)) +
+  geom_line() +
+ facet_wrap(~ type, scales = "free_y") +
+  labs(x = "Date", y = "Total Cases", title = "Figure 02:COVID-19 Cases in Australia According to Year") 
+  
+```
+
+
+By using the following graph we can identify how Covid-19 cases in Australia varies according to the month
+
+```{r,comment=NA,echo=FALSE,,message=FALSE}
+library(tidyverse)
+ggplot(australia_data_new, aes(x = month, y = cases, color = type)) +
+  geom_line() +
+  facet_wrap(~ type, scales = "free_y") +
+  labs(x = "Month", y = "Total Cases", title = "Frigure 03:COVID-19 Cases in Australia According to Month") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+##### **2.2.3 Total number of cases according to province**
+
+Mainly there are 08 provinces in Australia as New South Wales, Victoria, Queensland, Western Australia, South Australia, and Tasmania and two internal territories the Northern Territory and the Australian Capital Territory.The following graph describes how many COVID-19 confirmed cases were reported from each province.
+
+According to the graph highest number of cases were reported from New South Wales while the lowest number of cases were reported from Nothern Territory.
+
+
+
+
+```{r,comment=NA,echo=FALSE,,message=FALSE}
+library(tidyverse)
+
+
+confirmed_data <- australia_data %>% filter(type == "confirmed")
+
+
+ggplot(confirmed_data, aes(x = province, y = cases, fill = province)) +
+geom_bar(stat = "identity") +
+labs(x = "Province", y = "Total Cases", title = "Figure 04: Confirmed COVID-19 Cases in Australia by Province")+
+theme_minimal() +
+theme(axis.text.x = element_blank()) 
+  
+
+```
+
+##### **2.2.4 Comparision with other countries**
+
+Let's compare Australia's confirmed cases with those from the top 5 countries that have reported the highest number of confirmed cases according to the dataset:coronavirus. *(Note that All data entries span from January 22, 2020, to March 9, 2023.)*
+
+The data indicates that the US and India experienced a more severe impact from the outbreak compared to the other countries displayed. Differences in factors such as population size, healthcare infrastructure, and public health strategies may explain the variations in the number of confirmed cases.
+
+
+```{r,comment=NA,echo=FALSE,,message=FALSE}
+# refered from google
+
+library(tidyverse)
+
+countries_to_plot <- c("US", "India", "France", "Germany", "Brazil", "Australia")
+
+filtered_data <- coronavirus %>%
+  filter(type == "confirmed", cases >= 0, country %in% countries_to_plot)
+
+
+country_cases <- filtered_data %>%
+  group_by(country) %>%
+  summarize(total_cases = sum(cases, na.rm = TRUE))
+
+
+ggplot(country_cases, aes(x = reorder(country, -total_cases), y = total_cases, fill = country)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Figure 05:Total Confirmed Cases by Country",
+       x = "Country",
+       y = "Total Confirmed Cases") 
+ 
+
+```
+
+Australia is bordered by several countries across the surrounding oceans. To the north, its closest neighbors include Papua New Guinea, Indonesia. To the northwest, it is near the Philippines. New Zealand lies to the southeast. 
+
+According to the following graph Australia reports the highest number of confirmed COVID-19 cases among its neighboring countries, with a total of 11,518,404 cases. The Philippines follows with a substantial count of 4,078,127 cases. In contrast, New Zealand has reported significantly fewer cases, totaling 2,236,119. Papua New Guinea has the lowest count of confirmed cases in the group, at just 46,841.
+
+
+```{r,,comment=NA,echo=FALSE,,message=FALSE}
+library(tidyverse)
+countries_to_plot <- c("New Zealand", "Papua New Guinea", "Australia","Philippines")
+
+filtered_data <- coronavirus %>%
+  filter(type == "confirmed", cases >= 0, country %in% countries_to_plot)
+
+
+country_cases <- filtered_data %>%
+  group_by(country) %>%
+  summarize(total_cases = sum(cases, na.rm = TRUE))
+
+
+ggplot(country_cases, aes(x = reorder(country, -total_cases), y = total_cases, fill = country)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = scales::comma(total_cases)), vjust = -0.5)+
+  labs(title = "Figure 06:Neighbour Countries and Australia",
+       x = "Country",
+       y = "Total Confirmed Cases") 
+ 
+
+```
+
+## **3. Conclusions & Discussions**
+
+1. The data indicates a significant increase in confirmed COVID-19 cases in Australia, particularly peaking in early 2022. This means virus was spreading rapidly at that time.
+
+2. There was a noticeable rise in death cases starting from 2022 and extending into early 2023. This increase might be due to severe outbreak and limitations in the health facilities.
+
+3. The recovery data shows an initial peak in late 2020, indicating that a large number of individuals recovered early in the pandemic but recovery rate is less as pandemic grows with the time indicating the growth in number of deaths.
+
+4. Among Australia’s eight provinces and two territories, New South Wales reported the highest number of confirmed cases, while Nothern Territory had the lowest. This disparity could be influenced by population density, healthcare facilities, and public health measures in different regions.
+
+5. Australia experienced a more severe impact from the pandemic compared to its neighbors Philippines,Papua New Guinea and New Zealand.
+
+6. Countries with larger populations such as the US and India, experienced more severe outbreaks. Australia’s large number of confirmed cases could be linked to its large population and urban centers.
+
+*(Note that all data corresponding to cases with negative values have been removed)*
+
+### How Australia managed COVID-19?
+
+A National COVID-19 Health Management Plan had been developed to outline the Australian Government health supports to manage COVID-19.These health supports have been informed by the likely 2023 Australian epidemiological outlook and advice from the Chief Medical Officer, Professor Paul Kelly. 
+The National Plan summarises the interconnecting whole-of-system measures to transition our management of COVID-19, while maintaining a state of readiness and capacity to respond as the pandemic continues to evolve.
+
+**The key objectives of the National Plan are:**
+
+•	Minimising the level of severe COVID-19 and death
+
+•	Prioritising those at risk of severe illness, including through targeted supports
+
+•	Ensuring the health system as a whole has the capacity and capability to respond to future waves and variants
+
+•	Promoting uptake of COVID-19 vaccinations and treatments,slowing the spread of transmission, including through each individual’s actions and engagement with protective measures. 
+
+
+**The National Plan health supports are grouped under key themes in line with the objectives.**
+
+•	Vaccine certainty – continuation of the vaccine program as a key means of defence
+
+•	Informed community, informed choices – increasing community education and engagement to maximise vaccination and treatment uptake, and community protection
+
+•	Taking the pressure off hospitals – investments to reduce stress on the health system to support timely, effective and affordable care
+
+•	No one left behind – additional supports for those who are most at risk of experiencing severe COVID-19 and for those who may have difficulty accessing the care they need 
+
+•	Effective and fast testing – clear guidance on when and where to get tested
+
+•	National Medical Stockpile (NMS) safety net and pandemic preparedness – ensuring Australia’s strategic reserve is prepared with stock and effective distribution as needed 
+
+•	Recovery – looking towards the future to address the longer impacts of the pandemic on the health of Australians, including long COVID and mental health 
+
+
+## **4. References**
+
+https://en.wikipedia.org/wiki/Australia
+
+https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Australia
+
+https://www.health.gov.au/resources/publications/national-covid-19-health-management-plan-for-2023
+
+
+
+
+
